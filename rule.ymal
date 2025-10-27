@@ -1,0 +1,59 @@
+# rules.yml (excerpt)
+- id: sqli_basic
+  name: SQL Injection - basic
+  description: Detect common SQLi patterns (UNION, SELECT, OR '1'='1', comment markers)
+  severity: high
+  tags: [sqli, injection]
+  regex: (?i)(\bunion\b.*\bselect\b|(\bselect\b.*\bfrom\b)|(\bor\b.+?=.+?['"]?1['"]?)|(--|#\s).*$)
+
+- id: xss_basic
+  name: Cross-site scripting - basic
+  description: Detect suspicious script tags or event handlers in parameters
+  severity: high
+  tags: [xss, injection]
+  regex: (?i)(<\s*script\b|javascript:|onerror\s*=|onload\s*=|<\s*img\b.*\bon\w+\s*=)
+
+- id: lfi
+  name: Local file include / path traversal
+  description: Common LFI / directory traversal patterns
+  severity: high
+  tags: [lfi, traversal]
+  regex: (\.\./\.\.|/etc/passwd|\.\.\\\.\.|[A-Za-z]:\\.*\\windows\\)
+
+- id: rce_cmd_injection
+  name: Command injection - separators
+  description: Detect command separators and suspicious sequences used for command injection
+  severity: high
+  tags: [rce, command-injection]
+  regex: ([;&|`]\s*[^&|;`]+|;\\s*\\(|\\$\\(|\\|\\s*nc\\b|\\bexec\\b.*\\(|\\bpassthru\\b)
+
+- id: brute_force_ssh
+  name: Brute force - authentication failure
+  description: Repeated authentication failures — sample for sshd/sshd logs or web auth
+  severity: medium
+  tags: [bruteforce, auth]
+  regex: (?i)(failed password|authentication failure|invalid user|login failed|401\s)
+
+- id: suspicious_user_agent
+  name: Suspicious user-agent / scanner
+  description: Known scanner strings or no UA and long URL
+  severity: medium
+  tags: [recon]
+  regex: (?i)(sqlmap|nikto|acunetix|nessus|fuzz|masscan|wget|curl|python-requests)
+
+- id: ssrf
+  name: SSRF - external IPs in parameters
+  description: External URL shapes in parameters
+  severity: high
+  tags: [ssrf]
+  regex: (?i)(https?:\/\/(?:\d{1,3}\.){3}\d{1,3}|https?:\/\/[^\s\/]+\.[^\s\/]{2,})
+
+- id: path_traversal_win
+  name: Path traversal windows
+  description: Windows-style path traversal/inclusion
+  severity: high
+  tags: [lfi, windows]
+  regex: (?i)([A-Za-z]:\\.*\.\.\\|%5c%5c|%5c\.\.)
+
+# Add more rules as you discover patterns
+
