@@ -1,0 +1,41 @@
+- id: "XSS_SCAN"
+  name: "XSS Attack Detected"
+  regex: "<script>alert"
+  severity: "high"
+  tags: ["xss", "web-attack"]
+  description: "Detects basic JavaScript injection attempts."
+
+- id: "SQLI_SCAN"
+  name: "SQL Injection Attack"
+  regex: "OR '1'='1"
+  severity: "high"
+  tags: ["sqli", "web-attack"]
+  description: "Detects tautological SQL injection attempts."
+
+- id: "SCANNER_BOT"
+  name: "Known Scanner/Bot"
+  regex: "sqlmap|PhantomJS|Nmap"
+  severity: "medium"
+  tags: ["scanner", "bot", "automation"]
+  description: "Detects known security scanner user agents."
+
+- id: "SENSITIVE_FILE_SCAN"
+  name: "Sensitive File Scan"
+  regex: "\\.env|/config.php"
+  severity: "medium"
+  tags: ["fuzzing", "information-disclosure"]
+  description: "Detects scans for environment or configuration files."
+
+- id: "ADMIN_PANEL_SCAN"
+  name: "Admin Panel Probe"
+  regex: "/admin|/phpmyadmin|/wp-login"
+  severity: "low"
+  tags: ["scanner", "brute-force"]
+  description: "Detects probes for administrative interfaces."
+
+- id: "AUTOMATED_TOOL"
+  name: "Automated Scanner"
+  regex: "(?i)(sqlmap|nmap|phantomjs|masscan|nikto|python-requests)"
+  severity: "medium"
+  tags: ["bot", "scanner", "automation"]
+  description: "Detects traffic from known automated tools like SQLMap, Nmap, or PhantomJS."

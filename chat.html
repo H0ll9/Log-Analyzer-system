@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Security Analyst</title>
+        
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Tailwind CSS (Ignore warning, fine for dev) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; }
+        .chat-container { height: calc(100vh - 180px); overflow-y: auto; }
+        .chat-container::-webkit-scrollbar { width: 8px; }
+        .chat-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        
+        /* Code block styling */
+        .code-block {
+            background-color: #000;
+            border: 1px solid #334155;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            color: #a5b4fc;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+            /* --- Add these classes to your <style> section --- */
+    
+    /* Markdown Container */
+    .prose { line-height: 1.6; }
+    
+    /* Headers */
+    .prose h1 { font-size: 1.5em; font-weight: bold; color: #fff; margin-top: 1.5em; margin-bottom: 0.5em; }
+    .prose h2 { font-size: 1.25em; font-weight: bold; color: #e2e8f0; margin-top: 1em; margin-bottom: 0.5em; }
+    .prose h3 { font-size: 1.1em; font-weight: bold; color: #cbd5e1; margin-top: 0.5em; margin-bottom: 0.5em; }
+    
+    /* Paragraphs */
+    .prose p { margin-bottom: 0.75em; }
+    
+    /* Lists */
+    .prose ul { list-style-type: disc; margin-left: 1.5em; margin-bottom: 0.75em; color: #cbd5e1; }
+    .prose ol { list-style-type: decimal; margin-left: 1.5em; margin-bottom: 0.75em; color: #cbd5e1; }
+    .prose li { margin-bottom: 0.25em; }
+    
+    /* Inline Code */
+    .prose code {
+        background-color: rgba(255, 255, 255, 0.1); 
+        padding: 2px 4px; 
+        border-radius: 4px; 
+        font-family: monospace; 
+        color: #e2e8f0; 
+        font-size: 0.9em;
+    }
+    
+    /* Code Blocks */
+    .prose pre {
+        background-color: #000;
+        border: 1px solid #334155;
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 10px 0;
+    }
+    
+    .prose pre code {
+        background-color: transparent; 
+        padding: 0; 
+        color: #a5b4fc; 
+    }
+
+        /* 1. Lock the page to screen height, prevent page scroll */
+        body { 
+            background-color: #0f172a; 
+            color: #e2e8f0; 
+            margin: 0; 
+            overflow: hidden; 
+            height: 100vh;
+        }
+
+        .chat-scroll { 
+            height: 100%; 
+            overflow-y: auto; 
+            padding-right: 4px; /* Prevent scrollbar from covering text */
+        }
+
+        /* 2. Custom Scrollbar for the chat area only */
+        .chat-scroll::-webkit-scrollbar { width: 8px; }
+        .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .chat-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        /* 3. Markdown Styling */
+        .prose { line-height: 1.6; }
+        .prose h1 { font-size: 1.5em; font-weight: bold; color: #fff; margin-top: 1.5em; margin-bottom: 0.5em; }
+        .prose h2 { font-size: 1.25em; font-weight: bold; color: #e2e8f0; margin-top: 1em; margin-bottom: 0.5em; }
+        .prose h3 { font-size: 1.1em; font-weight: bold; color: #cbd5e1; margin-top: 0.5em; margin-bottom: 0.5em; }
+        .prose p { margin-bottom: 0.75em; }
+        .prose ul { list-style-type: disc; margin-left: 1.5em; margin-bottom: 0.75em; color: #cbd5e1; }
+        .prose ol { list-style-type: decimal; margin-left: 1.5em; margin-bottom: 0.75em; color: #cbd5e1; }
+        .prose li { margin-bottom: 0.25em; }
+        .prose code { background-color: rgba(255, 255, 255, 0.1); padding: 2px 4px; border-radius: 4px; font-family: monospace; color: #e2e8f0; font-size: 0.9em; }
+        
+        /* Code Blocks */
+        .prose pre { background-color: #000; border: 1px solid #334155; padding: 12px; border-radius: 8px; overflow-x: auto; margin: 10px 0; }
+        .prose pre code { background-color: transparent; padding: 0; color: #a5b4fc; }
+    
+    </style>
+</head>
+<body>
+
+<div id="app" class="flex flex-col h-screen w-full">
+    
+    <!-- 1. Header (Fixed Top) -->
+    <header class="flex-shrink-0 p-4 border-b border-slate-700 bg-slate-800/95 backdrop-blur-sm flex justify-between items-center z-10">
+        <div class="flex items-center gap-4">
+            <a href="/" class="text-gray-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium bg-slate-900 px-3 py-2 rounded border border-slate-700">
+                <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+            </a>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded bg-purple-600 flex items-center justify-center text-white">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white">AI Analyst</h1>
+                    <div class="text-xs text-purple-400">Powered by Ollama</div>
+                </div>
+            </div>
+        </div>
+        <div class="text-xs text-gray-500">
+            <!-- Model: <span class="text-gray-300">llama3</span> -->
+        </div>
+    </header>
+
+    <!-- 2. Chat Area (Flex-Grow / Scrollable Middle) -->
+       <!-- 2. Chat Area (Flex-Grow / Scrollable Middle) -->
+    <div class="flex-grow relative overflow-hidden w-full">
+        <!-- Updated Class: Added 'h-full' and 'chat-scroll' -->
+        <div ref="chatContainer" class="h-full overflow-y-auto p-4 chat-scroll">
+            <div class="max-w-4xl mx-auto space-y-4">
+                
+                <!-- Welcome Message -->
+                <div v-if="messages.length === 0" class="text-center text-gray-500 mt-20">
+                    <i class="fa-solid fa-robot text-4xl mb-4 block opacity-50"></i>
+                    <p class="text-lg">I am your AI Security Analyst.</p>
+                    <p class="text-sm">Paste suspicious log lines, ask for rules suggestions, or explain threats.</p>
+                </div>
+
+                <!-- Messages Loop -->
+                <div v-for="(msg, index) in messages" :key="index" class="flex" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+                    
+                    <!-- User Bubble -->
+                    <div v-if="msg.role === 'user'" class="flex items-end gap-2 max-w-[80%]">
+                        <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-br-none shadow-md text-sm">
+                            {{ msg.content }}
+                        </div>
+                    </div>
+
+                    <!-- AI Bubble -->
+                    <div v-else class="flex items-end gap-2 max-w-[90%]">
+                        <div class="p-2 bg-slate-700 rounded-full w-8 h-8 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-brain text-purple-400 text-xs"></i>
+                        </div>
+                        <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl rounded-bl-none shadow-md text-sm text-gray-200 prose">
+                            <div v-html="formatMessage(msg.content)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typing Indicator -->
+                <div v-if="isLoading" class="flex justify-start">
+                    <div class="flex items-end gap-2">
+                        <div class="p-2 bg-slate-700 rounded-full w-8 h-8 flex items-center justify-center">
+                            <i class="fa-solid fa-brain text-purple-400 text-xs"></i>
+                        </div>
+                        <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl rounded-bl-none text-gray-500 text-sm flex gap-1">
+                            <span class="animate-bounce">.</span>
+                            <span class="animate-bounce delay-100">.</span>
+                            <span class="animate-bounce delay-200">.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spacer at bottom to scroll to last message nicely -->
+                <div class="h-4"></div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Input Area (Fixed Bottom) -->
+    <div class="flex-shrink-0 p-4 bg-slate-800 border-t border-slate-700 z-10">
+        <div class="max-w-4xl mx-auto">
+            
+            <!-- Quick Prompts -->
+            <div class="flex gap-2 mb-3 overflow-x-auto pb-1">
+                <button @click="setInput(promptSQLi)" class="whitespace-nowrap bg-slate-900 border border-slate-700 hover:border-purple-500 text-xs text-purple-300 px-3 py-1.5 rounded-full transition-colors">
+                    Analyze SQLi
+                </button>
+                <button @click="setInput(promptXSS)" class="whitespace-nowrap bg-slate-900 border border-slate-700 hover:border-purple-500 text-xs text-purple-300 px-3 py-1.5 rounded-full transition-colors">
+                    Generate XSS Rule
+                </button>
+                <button @click="setInput(promptError)" class="whitespace-nowrap bg-slate-900 border border-slate-700 hover:border-purple-500 text-xs text-purple-300 px-3 py-1.5 rounded-full transition-colors">
+                    Troubleshoot 500 Error
+                </button>
+                <button @click="setInput(promptBlock)" class="whitespace-nowrap bg-slate-900 border border-slate-700 hover:border-purple-500 text-xs text-purple-300 px-3 py-1.5 rounded-full transition-colors">
+                    Nginx Block IP
+                </button>
+            </div>
+
+            <form @submit.prevent="sendMessage" class="relative">
+                <textarea 
+                    v-model="inputMessage" 
+                    @keydown.enter.prevent="handleEnter"
+                    placeholder="Ask about logs, threats, or security rules..." 
+                    class="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 pr-12 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 resize-none shadow-inner"
+                    rows="1"
+                ></textarea>
+                <button 
+                    type="submit" 
+                    :disabled="!inputMessage.trim() || isLoading" 
+                    class="absolute right-3 bottom-3 text-purple-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-2"
+                >
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const { createApp, ref, nextTick, onMounted } = Vue;
+
+    createApp({
+        setup() {
+            const inputMessage = ref('');
+            const isLoading = ref(false);
+            const messages = ref([]);
+            const chatContainer = ref(null);
+
+            // Define prompts here to avoid HTML quote errors
+            const promptSQLi = ref("Analyze this log: 45.33.22.11 - - [27/Dec/2025:16:00:01] \"GET /?id=1 UNION SELECT 1,2,3--\" 200");
+            const promptXSS = ref("Suggest 5 regex rules to detect XSS in User Agent.");
+            const promptError = ref("My server is returning 500 errors frequently. What are common causes?");
+            const promptBlock = ref("Provide Nginx config to block IP 192.168.1.5.");
+
+            const setInput = (text) => {
+                inputMessage.value = text;
+            };
+
+            const scrollToBottom = async () => {
+                await nextTick();
+                if (chatContainer.value) {
+                    chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                }
+            };
+            
+            const formatMessage = (content) => {
+                // Use marked.parse to convert markdown to HTML
+                const html = marked.parse(content);
+                return html;
+            };
+
+            const sendMessage = async () => {
+                if (!inputMessage.value.trim() || isLoading.value) return;
+
+                const userMsg = inputMessage.value.trim();
+                messages.value.push({ role: 'user', content: userMsg });
+                inputMessage.value = '';
+                scrollToBottom();
+
+                isLoading.value = true;
+
+                try {
+                    const res = await fetch('http://localhost:5000/api/llm/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: userMsg })
+                    });
+
+                    const data = await res.json();
+
+                    if (data.status === 'success') {
+                        messages.value.push({ role: 'assistant', content: data.reply });
+                    } else {
+                        messages.value.push({ role: 'assistant', content: 'Error: ' + data.message });
+                    }
+                } catch (e) {
+                    messages.value.push({ role: 'assistant', content: 'Error: Could not connect to AI backend. Is Ollama running?' });
+                } finally {
+                    isLoading.value = false;
+                    scrollToBottom();
+                }
+            };
+
+            const handleEnter = (e) => {
+                if (e.shiftKey) return; // Allow new line on shift+enter
+                sendMessage();
+            };
+
+            return {
+                inputMessage, isLoading, messages, chatContainer,
+                promptSQLi, promptXSS, promptError, promptBlock, // Add these to return
+                setInput, sendMessage, handleEnter, formatMessage
+            };
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>

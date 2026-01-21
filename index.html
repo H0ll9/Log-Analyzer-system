@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Analyzer</title>
+    
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .card { background-color: #1e293b; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; }
+        
+        .severity-high { color: #ef4444; background-color: rgba(239, 68, 68, 0.15); padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; }
+        .severity-medium { color: #f59e0b; background-color: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; }
+        .severity-low { color: #10b981; background-color: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 4px; font-size: 0.75em; font-weight: bold; }
+        
+        /* Table styling */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 0.75rem; border-bottom: 1px solid #334155; color: #94a3b8; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.05em; position: sticky; top: 0; background-color: #1e293b; z-index: 10;}
+        td { padding: 0.75rem; border-bottom: 1px solid #334155; font-size: 0.85em; vertical-align: middle; }
+        tr:hover { background-color: #334155; cursor: pointer; transition: background-color 0.2s; }
+        
+        /* Animations */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 5px;}
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Scrollbar for table */
+        .table-container { max-height: 500px; overflow-y: auto; }
+        .table-container::-webkit-scrollbar { width: 8px; }
+        .table-container::-webkit-scrollbar-track { background: #1e293b; }
+        .table-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .table-container::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="min-h-screen p-4 md:p-6 flex flex-col gap-6">
+    
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-700 pb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/20">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-tight">Log Analyzer<span class="text-xs font-normal text-gray-400 ml-2">by H0ll9</span></h1>
+                <div class="text-xs text-gray-500 flex items-center gap-2 mt-1">
+                    <span :class="{'text-green-500': isOnline, 'text-red-500': !isOnline}" class="flex items-center gap-1">
+                        <i class="fa-solid fa-circle text-[8px]"></i> 
+                        {{ isOnline ? 'System Online' : 'Connection Lost' }}
+                    </span>
+                    <span class="text-gray-700">|</span>
+                    <span v-if="isLoading"><div class="loader"></div> Updating Live...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status & Info & Navigation -->
+        <div class="flex gap-3 items-center">
+            
+            <!-- Server Info -->
+            <div class="hidden md:flex gap-4 text-right text-xs text-gray-400 mr-4">
+                <div>
+                   
+                </div>
+                <div>
+                    
+                </div>
+            </div>
+
+            <!-- Navigation to AI Chat -->
+            <a href="chat.html" class="flex items-center gap-2 bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 px-4 py-2 rounded-lg transition-colors border border-purple-600/30 group">
+                <i class="fa-solid fa-brain group-hover:text-purple-300 transition-colors"></i>
+                <span class="font-medium">AI Analyst</span>
+            </a>
+
+        </div>
+    </header>
+
+    <!-- KPI Cards Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Total Alerts (Moved here to fix alignment) -->
+        <div class="card p-4 border-t-4 border-blue-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="text-gray-400 text-xs font-semibold uppercase tracking-wider">Total Alerts</div>
+                    <div class="text-3xl font-bold text-white mt-1">{{ stats.total_alerts }}</div>
+                </div>
+                <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+            </div>
+            <div class="text-xs text-gray-500 mt-2">All time record</div>
+        </div>
+
+        <div class="card p-4 border-t-4 border-red-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="text-gray-400 text-xs font-semibold uppercase tracking-wider">High Severity</div>
+                    <div class="text-3xl font-bold text-red-400 mt-1">{{ stats.by_severity.high || 0 }}</div>
+                </div>
+                <div class="p-2 bg-red-500/10 rounded-lg text-red-400">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+            <div class="text-xs text-gray-500 mt-2">Critical threats</div>
+        </div>
+
+        <div class="card p-4 border-t-4 border-blue-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="text-gray-400 text-xs font-semibold uppercase tracking-wider">Top Source IP</div>
+                    <div class="text-sm font-bold text-blue-300 mt-2 font-mono truncate">{{ stats.top_ips[0]?.src_ip || 'N/A' }}</div>
+                    <div class="text-xs text-gray-500">{{ stats.top_ips[0]?.count }} hits</div>
+                </div>
+                <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 border-t-4 border-purple-500">
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="text-gray-400 text-xs font-semibold uppercase tracking-wider">Bots Detected</div>
+                    <div class="text-3xl font-bold text-purple-400 mt-1">{{ botCount }}</div>
+                </div>
+                <div class="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+            </div>
+            <div class="text-xs text-gray-500 mt-2">Automated traffic</div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="card p-4 h-80 relative"> <!-- Fixed height to prevent overflow -->
+            <h3 class="text-gray-400 text-sm font-semibold mb-4 uppercase tracking-wider">Threat Distribution (Severity)</h3>
+            <div class="relative h-64 w-full flex items-center justify-center">
+                <canvas id="severityChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card p-4 h-80 relative"> <!-- Fixed height to prevent overflow -->
+            <h3 class="text-gray-400 text-sm font-semibold mb-4 uppercase tracking-wider">Top 5 Attacking IPs</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="ipChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Table -->
+    <div class="card overflow-hidden h-full flex-grow flex flex-col">
+        <!-- Filter Bar -->
+        <!-- Filter Bar -->
+        <div class="flex flex-wrap gap-4 p-4 border-b border-slate-700 bg-slate-800/50 items-center">
+            <div class="flex-grow min-w-[200px]">
+                <div class="relative">
+                    <i class="fa-solid fa-search absolute left-3 top-2.5 text-gray-500 text-xs"></i>
+                    <!-- Changed 'v-model' to lazy update on 'change', removed auto-fetch -->
+                    <input v-model.lazy="filters.search" @keyup.enter="applyFilters" type="text" placeholder="Search URL, IP, Match Pattern... (Press Enter)" 
+                        class="w-full bg-slate-900 border border-slate-700 rounded pl-8 pr-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-gray-600">
+                </div>
+            </div>
+            
+            <div class="flex gap-2 flex-grow">
+                <select v-model.lazy="filters.severity" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <option value="">All Severities</option>
+                    <option v-for="s in distinctValues.severity" :key="s" :value="s">{{ s }}</option>
+                </select>
+                
+                <select v-model.lazy="filters.method" class="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <option value="">All Methods</option>
+                    <option v-for="m in distinctValues.http_method" :key="m" :value="m">{{ m }}</option>
+                </select>
+
+                
+                <div class="flex-grow"></div>
+
+                <!-- Apply Filter Button -->
+                <button @click="applyFilters" :disabled="isLoading" class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2 rounded text-sm font-medium transition-colors shadow-lg shadow-blue-600/20 flex items-center gap-2">
+                    <i class="fa-solid fa-filter" :class="{'fa-spin': isLoading}"></i>
+                    Apply Filter
+                </button>
+
+                <!-- Reset / Default View Button (Replaces old Refresh) -->
+                <button @click="resetToDefault" :disabled="isLoading" class="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white px-3 py-2 rounded text-sm transition-colors border border-slate-600 flex items-center gap-2" title="Reset to Default View">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                    <span class="hidden sm:inline">Reset View</span>
+                </button>                
+            </div>
+        </div>
+
+        <!-- Alerts Table Container -->
+        <div class="table-container flex-grow">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Severity</th>
+                        <th>Source IP & User Agent</th>
+                        <th>Request Details</th>
+                        <th>Matched Rule</th>
+                        <th class="text-right">Action</th>
+                    </tr>
+                </thead>
+                                <tbody>
+                    <tr v-if="alerts.length === 0">
+                        <td colspan="6" class="text-center py-8 text-gray-500">
+                            <i class="fa-solid fa-folder-open text-2xl mb-2 block"></i>
+                            No alerts found matching your filters.
+                        </td>
+                    </tr>
+                    <!-- CHANGED: v-for="item in alerts" (was 'alert') -->
+                    <tr v-for="item in alerts" :key="item.id" @click="selectedAlert = item; showModal = true" class="transition-colors">
+                        <td class="text-gray-400 font-mono text-xs whitespace-nowrap">{{ formatTime(item.created_at) }}</td>
+                        <td>
+                            <span :class="`severity-${item.severity.toLowerCase()}`">{{ item.severity }}</span>
+                        </td>
+                        <td>
+                            <div class="font-mono text-blue-300 text-xs font-bold">{{ item.src_ip }}</div>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-xs text-gray-500">{{ item.browser_family }} / {{ item.os_family }}</span>
+                                <i v-if="item.is_bot" class="fa-solid fa-robot text-purple-500 text-xs" title="Detected Bot"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <span class="bg-slate-700 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded text-gray-300 border border-slate-600">{{ item.http_method }}</span>
+                                <div class="text-gray-300 text-xs truncate max-w-[250px]">{{ item.http_url }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-xs font-bold text-red-300">{{ item.rule_name }}</div>
+                            <div class="text-[10px] text-gray-500 truncate max-w-[150px] font-mono mt-0.5">{{ item.match_text }}</div>
+                        </td>
+                        <td class="text-right">
+                            <button class="text-gray-500 hover:text-white transition-colors">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination Info Footer -->
+        <div class="p-3 border-t border-slate-700 bg-slate-800/30 text-right">
+            <span class="text-xs text-gray-500">Displaying latest {{ alerts.length }} records</span>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+       <!-- Details Modal -->
+    <!-- Added: && selectedAlert to prevent crashes -->
+    <div v-if="showModal && selectedAlert" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50" @click.self="showModal = false">
+        <div class="bg-slate-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-700 shadow-2xl transform transition-all">
+            <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800 rounded-t-xl sticky top-0 z-10">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-red-500/10 rounded-lg text-red-400">
+                        <i class="fa-solid fa-bug"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white">Alert Analysis</h2>
+                </div>
+                <button @click="showModal = false" class="text-gray-400 hover:text-white transition-colors text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div v-if="selectedAlert" class="p-6 space-y-6">
+                <!-- Top Grid -->
+                <div class="grid grid-cols-2 gap-6 text-sm">
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase font-semibold mb-1">Rule ID</div>
+                        <div class="font-mono text-blue-400 bg-blue-500/10 inline-block px-2 py-1 rounded">{{ selectedAlert.rule_id }}</div>
+                    </div>
+                    <div>
+                        <div class="text-gray-500 text-xs uppercase font-semibold mb-1">Detected At</div>
+                        <div class="text-gray-300">{{ formatTime(selectedAlert.created_at) }}</div>
+                    </div>
+                </div>
+
+                <!-- Source Box -->
+                <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                    <div class="text-gray-500 text-xs uppercase font-semibold mb-3 mb-0">Attack Source</div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-globe text-gray-600"></i>
+                            <span class="font-mono text-lg text-blue-300">{{ selectedAlert.src_ip }}</span>
+                        </div>
+                        <div class="h-4 w-px bg-slate-700"></div>
+                        <div class="text-sm">
+                            <span class="bg-slate-700 text-gray-300 px-2 py-1 rounded text-xs border border-slate-600">{{ selectedAlert.browser_family }}</span>
+                            <span class="bg-slate-700 text-gray-300 px-2 py-1 rounded text-xs border border-slate-600">{{ selectedAlert.os_family }}</span>
+                            <span v-if="selectedAlert.is_bot" class="bg-purple-900/50 text-purple-300 px-2 py-1 rounded text-xs border border-purple-800 font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-robot"></i> BOT
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request Box -->
+                <div>
+                    <div class="text-gray-500 text-xs uppercase font-semibold mb-2">HTTP Request Payload</div>
+                    <div class="bg-black p-3 rounded-lg font-mono text-sm text-green-400 break-all border border-slate-800 shadow-inner">
+                        {{ selectedAlert.http_method }} {{ selectedAlert.http_url }}
+                    </div>
+                </div>
+
+                <!-- Match Box -->
+                <div>
+                    <div class="text-gray-500 text-xs uppercase font-semibold mb-2">Matched Pattern</div>
+                    <div class="bg-red-950/20 p-3 rounded-lg font-mono text-sm text-red-300 break-all border border-red-900/50 shadow-inner">
+                        {{ selectedAlert.match_text }}
+                    </div>
+                </div>
+
+                <!-- Tags (CHANGED: Using safeTags function) -->
+                <div>
+                    <div class="text-gray-500 text-xs uppercase font-semibold mb-2">Context Tags</div>
+                    <div class="flex flex-wrap gap-2">
+                        <!-- We will define 'safeTags' in the script below -->
+                        <span v-for="tag in safeTags(selectedAlert.tags)" :key="tag" class="bg-slate-700/50 text-blue-300 border border-slate-600 text-xs px-3 py-1 rounded-full">
+                            #{{ tag }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    const { createApp, ref, onMounted, computed, onUnmounted } = Vue;
+
+    createApp({
+        setup() {
+            const alerts = ref([]);
+            const stats = ref({ total_alerts: 0, by_severity: {}, top_ips: [], top_status_codes: [] });
+            const distinctValues = ref({ severity: [], http_method: [] });
+            const filters = ref({ search: '', severity: '', method: '' });
+            const isLoading = ref(false);
+            const isOnline = ref(true);
+            const showModal = ref(false);
+            const selectedAlert = ref(null);
+            
+            let refreshInterval = null;
+            let severityChartInstance = null;
+            let ipChartInstance = null;
+
+            const formatTime = (isoString) => {
+                if(!isoString) return '';
+                const date = new Date(isoString);
+                return date.toLocaleTimeString() + ' ' + date.toLocaleDateString();
+            };
+
+            const safeTags = (tags) => {
+                // If it's already an array, use it
+                if (Array.isArray(tags)) return tags;
+                // If it's a string, try to parse it
+                try {
+                    const parsed = JSON.parse(tags || '[]');
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    return []; // If parsing fails, return empty array
+                }
+            };
+
+            const fetchStats = async () => {
+                try {
+                    const res = await fetch('http://localhost:5000/api/summary');
+                    const data = await res.json();
+                    if(data.status === 'success') {
+                        stats.value = data.data;
+                        updateCharts(data.data);
+                    }
+                } catch (e) { 
+                    isOnline.value = false; 
+                }
+            };
+
+            const fetchDistinct = async () => {
+                try {
+                    const [sev, meth] = await Promise.all([
+                        fetch('http://localhost:5000/api/distinct/severity').then(r => r.json()),
+                        fetch('http://localhost:5000/api/distinct/http_method').then(r => r.json())
+                    ]);
+                    distinctValues.value.severity = sev.data || [];
+                    distinctValues.value.http_method = meth.data || [];
+                } catch (e) { console.error(e); }
+            };
+
+            const fetchAlerts = async (forceBackground = false) => {
+                // If background timer triggers, but user has filters, stop.
+                if (forceBackground && (filters.value.search || filters.value.severity || filters.value.method)) {
+                    return;
+                }
+
+                isLoading.value = true;
+                
+                try {
+                    const params = new URLSearchParams({
+                        limit: 100,
+                        search: filters.value.search,
+                        severity: filters.value.severity,
+                        method: filters.value.method
+                    });
+                    
+                    const res = await fetch(`http://localhost:5000/api/alerts?${params}`);
+                    const data = await res.json();
+                    
+                    if(data.status === 'success') {
+                        alerts.value = data.data || [];
+                        isOnline.value = true;
+                    } else {
+                        isOnline.value = false;
+                    }
+                } catch (e) { 
+                    isOnline.value = false; 
+                } finally { 
+                    isLoading.value = false; 
+                }
+            };
+
+            const applyFilters = async () => {
+                await fetchAlerts(false);
+            };
+
+            // NEW FUNCTION: Resets filters and loads default data
+            const resetToDefault = async () => {
+                // 1. Clear Filter Inputs
+                filters.value = { search: '', severity: '', method: '' };
+                // 2. Reload Alerts (which will now be unfiltered/default)
+                await fetchAlerts(false);
+            };
+
+             const openModal = (item) => {
+                selectedAlert.value = item;
+                showModal.value = true;
+            };
+
+            const updateCharts = (data) => {
+                const ctxSev = document.getElementById('severityChart');
+                const ctxIp = document.getElementById('ipChart');
+                if (!ctxSev || !ctxIp) return;
+
+                if (severityChartInstance) severityChartInstance.destroy();
+                if (ipChartInstance) ipChartInstance.destroy();
+
+                severityChartInstance = new Chart(ctxSev.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(data.by_severity),
+                        datasets: [{
+                            data: Object.values(data.by_severity),
+                            backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 } } } },
+                        cutout: '70%'
+                    }
+                });
+
+                ipChartInstance = new Chart(ctxIp.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.top_ips.map(i => i.src_ip),
+                        datasets: [{
+                            label: 'Attacks',
+                            data: data.top_ips.map(i => i.count),
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4,
+                            barThickness: 20
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { 
+                            y: { beginAtZero: true, grid: { color: '#334155', drawBorder: false }, ticks: { color: '#64748b' } }, 
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } } 
+                        }
+                    }
+                });
+            };
+
+            const botCount = computed(() => {
+                return stats.value.total_bots;
+            });
+
+            onMounted(() => {
+                fetchStats();
+                fetchDistinct();
+                fetchAlerts(false); // Initial load
+                
+                refreshInterval = setInterval(() => {
+                    fetchStats(); 
+                    fetchAlerts(true); // Only refresh table if filters empty
+                }, 5000);
+            });
+            
+            onUnmounted(() => {
+                clearInterval(refreshInterval);
+            });
+
+            
+            return {
+                alerts, stats, distinctValues, filters, isLoading, isOnline, 
+                applyFilters, resetToDefault, showModal, selectedAlert, botCount, formatTime, safeTags
+            };
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
