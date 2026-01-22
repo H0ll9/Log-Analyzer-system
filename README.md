@@ -67,25 +67,23 @@ python log_analyzer_v3.py path/to/your/access.log --follow
 
 
 # Screenshots
-0. Running log analyzer
+## Running log analyzer
 <img width="1919" height="508" alt="Image" src="https://github.com/user-attachments/assets/96dafa9b-fe92-45d1-bd3f-a60712947aaa" />
 
-1. Main Dashboard
-The main view showing KPI cards, charts, and the alert list.
-
+## Main Dashboard
 <img width="1919" height="1014" alt="Image" src="https://github.com/user-attachments/assets/2072f569-015f-4013-a5d0-cbf34224c7d2" />
-
+### Visualization
 <img width="1871" height="551" alt="Image" src="https://github.com/user-attachments/assets/7dfee3eb-89cc-482e-b609-614aaa2796df" />
-
+### Filtering and Searching
 <img width="1879" height="710" alt="Image" src="https://github.com/user-attachments/assets/fe6f7083-382e-432b-8895-2fc40fc3a989" />
 
 
-2. Alert Analysis (Modal)
+## Alert Analysis (Modal)
 Clicking any log row opens this detailed view showing IP, Payload, and Matched Pattern.
 
 <img width="967" height="819" alt="Image" src="https://github.com/user-attachments/assets/55306a9f-02e1-417d-8573-54c56cbe0165" />
 
-3. AI Analyst
+## AI Analyst
 The chat interface for querying the Ollama LLM about your logs.
 
 <img width="1919" height="1040" alt="Image" src="https://github.com/user-attachments/assets/f826fcfb-fcb8-4a2a-bde7-a0c1051e9b7b" />
@@ -115,6 +113,4 @@ GET /api/alerts - List all alerts (supports filtering by ?severity=high).
 GET /api/summary - Get high-level stats (Total alerts, Bot count, Top IPs).
 GET /api/distinct/<field> - Get unique values for filters.
 POST /api/llm/chat - Send a message to the AI Analyst.
-```
-
 ```
