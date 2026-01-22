@@ -72,9 +72,9 @@ python log_analyzer_v3.py path/to/your/access.log --follow
 
 ## Main Dashboard
 <img width="1919" height="1014" alt="Image" src="https://github.com/user-attachments/assets/2072f569-015f-4013-a5d0-cbf34224c7d2" />
-### Visualization
+## Visualization
 <img width="1871" height="551" alt="Image" src="https://github.com/user-attachments/assets/7dfee3eb-89cc-482e-b609-614aaa2796df" />
-### Filtering and Searching
+## Filtering and Searching
 <img width="1879" height="710" alt="Image" src="https://github.com/user-attachments/assets/fe6f7083-382e-432b-8895-2fc40fc3a989" />
 
 
